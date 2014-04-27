@@ -4,21 +4,24 @@ var mysql = require('mysql')
 var db = mysql.createConnection({
     host: 'localhost',
     port : 8889,
-    user: 'root',
-    password: 'root',
+    user: 'user',
+    password: 'password',
     database: 'gamusic'
 })
  
-
-var app = require('express')()
+var express = require('express');
+var app = express()
   , server = require('http').createServer(app)
   , io = require('socket.io').listen(server);
 
 server.listen(3000);
 
+app.use(express.static(__dirname + '/'));
+//app.engine('html', require('ejs').renderFile);
 app.get('/', function (req, res) {
   res.sendfile(__dirname + '/index.html');
 });
+//app.use("/", express.static(__dirname + '/'));
 
 // Log any errors connected to the db
 db.connect(function(err){

@@ -9,18 +9,17 @@ $(document).ready(function(){
     var socket = io.connect('http://localhost:3000');
     
     function displayPlaylist(data){
-        var html = '';
-        for (var i = 0; i < data.length; i++){
-            // We store html as a var then add to DOM after for efficiency
-            html += '<li>' + data[i].title + '</li>';
-        }
         playlist = data;
-        $('#playlist').html(html);
     }
  
     // Initial set of notes, loop through and add to list
     socket.on('initial_setup', function(data){
     	displayPlaylist(data);
+    	$('head').append("<script type=\"text/javascript\" src=\"http:\/\/localhost:3000/script.js\" "+
+    	"data-config='{\"skin\":\"skins/tunes/skin.css\",\"volume\":50,\"autoplay\":false,"
+    	+"\"shuffle\":false,\"repeat\":1,\"placement\":\"top\",\"showplaylist\":false,\"playlist\":"
+    	+JSON.stringify(playlist)
+    	+"}' ><\/script>");
     });
  
     // New socket connected, display new count on page

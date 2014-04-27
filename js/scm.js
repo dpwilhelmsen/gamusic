@@ -198,6 +198,18 @@ var	playback = null,
 	previous = _(change).bind(null,-1),
 
 	finish = function(){
+		var event = new CustomEvent(
+			"trackFinished", 
+			{
+				detail: {
+					message: "Song Finished",
+					time: new Date(),
+				},
+				bubbles: true,
+				cancelable: true
+			}
+		);
+		document.dispatchEvent(event);
 		//repeat one start again, otherwise next song
 		if(repeatMode()==2) start();
 		else next();
