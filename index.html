@@ -1,0 +1,51 @@
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+$(document).ready(function(){
+    // Connect to our node/websockets server
+    var socket = io.connect('http://localhost:3000');
+    
+    function displayPlaylist(data){
+        var html = '';
+        for (var i = 0; i < data.length; i++){
+            // We store html as a var then add to DOM after for efficiency
+            html += '<li>' + data[i].title + '</li>';
+        }
+        console.log(data);
+        $('#playlist').html(html);
+    }
+ 
+    // Initial set of notes, loop through and add to list
+    socket.on('initial_setup', displayPlaylist);
+ 
+    // New socket connected, display new count on page
+    socket.on('users_connected', function(data){
+        $('#usersConnected').html('Users connected: ' + data);
+    })
+    
+    // Add requested song to playlist
+    socket.on('request_added', displayPlaylist);
+    
+    $('#makeRequest').click(function(){
+    	var request = {};
+    	request.title = $('#title').val();
+    	request.url = $('#url').val();
+    	if(request.title.length <= 0 || request.url.length <= 0) {
+    		alert('Title and URL must be populated');
+    		return;
+    	}
+    	socket.emit('new_request', {request: request});
+    });
+})
+</script>
+<ul id="playlist"></ul>
+<div id="usersConnected"></div>
+
+<div>
+Make a request:
+<label for="title">Title</labelm>
+<input type="text" id="title" name="title" value="" />
+<label for="url">URL</labelm>
+<input type="text" id="url" name="url" value="" />
+<input type="submit" id="makeRequest" value="Submit" />
+</div>
