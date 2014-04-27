@@ -52,8 +52,7 @@ io.sockets.on('connection', function(socket){
  	
  	socket.on('new_request', function(data) {
  		db.query('INSERT INTO songs SET ?', {title: data.request.title, url: data.request.url}, function(){
- 			currentPlaylist.splice(1, 0, data.request);
- 			io.sockets.emit('request_added', currentPlaylist);
+ 			io.sockets.emit('request_added', data);
  		});
  	});	
     // Check to see if initial query/notes are set

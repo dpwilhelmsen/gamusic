@@ -17,6 +17,45 @@ body{overflow:hidden; background:transparent; }
 </style>
 <link rel="stylesheet" type="text/css" href="css/scm.css?168" />
 <link rel="stylesheet" type="text/css" data-bind="attr:{href:skin}" id="skin" />
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+var currentPlaylist = [];
+var pendingRequests = [];
+var queuedRequests = false;
+var lastRequest = '';
+
+function findWithAttr(array, attr, value) {
+    for(var i = 0; i < array.length; i++) {
+        if(array[i][attr] === value) {
+            return i;
+        }
+    }
+}
+// Connect to our node/websockets server
+var socket = io.connect('http://localhost:3000');
+
+$(document).ready(function(){
+    
+    
+    
+    function displayPlaylist(data){
+        currentPlaylist = data;
+    }
+    
+    socket.on('initial_setup', function(data){
+    	displayPlaylist(data);
+    });
+    
+    // Add requested song to playlist
+    socket.on('request_added', function(data){
+    	var request = new Song(data.request);
+    	pendingRequests.push(request);
+    	queuedRequests = true;
+    });
+    
+})
+</script>
 </head>
 <body>
 	<div id="contentW" data-bind="style:{top:placement()=='top'?'25px':'0',
@@ -24,8 +63,26 @@ body{overflow:hidden; background:transparent; }
 <script type="text/javascript">
 (function(){
 	document.addEventListener("trackFinished", function(data){
-		alert('yes');
-		alert(data.message);
+		var current = SCM.current();
+		var currentIndex = findWithAttr(currentPlaylist, 'url', current.url());
+		var activePlaylist = SCM.playlist();
+		if (currentIndex === 0) var justPlayed = currentPlaylist.shift(); 
+		if(queuedRequests){
+			var queueIndex = findWithAttr(activePlaylist, 'url', lastRequest);
+			if(lastRequest.length > 0 && (queueIndex >= 0)) {
+				for(var i= 0; i < pendingRequests.length; i++){
+						SCM.queue(pendingRequests[i], queueIndex);
+						queueIndex++;
+				}
+			} else {
+				queueIndex = 1;
+				for(var i= 0; i < pendingRequests.length; i++){
+						SCM.queue(pendingRequests[i], queueIndex);
+						queueIndex++;
+				}
+			}
+		}
+		socket.emit('track_finished', {playlist:currentPlaylist});
 	}, false);
  	/*if(window==window.parent)
 		location.href = 'http://scmplayer.net';*/

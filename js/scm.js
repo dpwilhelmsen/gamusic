@@ -23,14 +23,19 @@ var	playback = null,
 
 	playlist = ko.observableArray(),
 	autoPlay = ko.observable(false),
-	queue = function(song){
+	queue = function(song, position){
+		position = typeof position !== 'undefined' ? position : -1;
 		var matches = _(playlist()).filter(function(el){
 			return el.url() == song.url();
 		});
 		if(matches.length>0) 
 			return matches[0];
 		else{
-			playlist.push(song);
+			if(position === -1) {
+				playlist.push(song);
+			}else{
+				playlist.splice(position, 0, song);
+			}			
 			return song;
 		}
 	},
