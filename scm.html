@@ -25,10 +25,17 @@ var pendingRequests = [];
 var queuedRequests = false;
 var lastRequest = '';
 
-function findWithAttr(array, attr, value) {
+function findWithAttr(array, attr, value, isMethod) {
+	isMethod = typeof isMethod !== 'undefined' ? isMethod : false;
     for(var i = 0; i < array.length; i++) {
-        if(array[i][attr] === value) {
-            return i;
+    	if(isMethod){
+    		if(array[i][attr]() === value) {
+            	return i;
+        	}
+    	} else {
+        	if(array[i][attr] === value) {
+        	    return i;
+        	}
         }
     }
 }
@@ -64,23 +71,23 @@ $(document).ready(function(){
 (function(){
 	document.addEventListener("trackFinished", function(data){
 		var current = SCM.current();
-		var currentIndex = findWithAttr(currentPlaylist, 'url', current.url());
 		var activePlaylist = SCM.playlist();
-		if (currentIndex === 0) var justPlayed = currentPlaylist.shift(); 
+		var currentIndex = findWithAttr(activePlaylist, 'url', current.url(), true);
 		if(queuedRequests){
-			var queueIndex = findWithAttr(activePlaylist, 'url', lastRequest);
-			if(lastRequest.length > 0 && (queueIndex >= 0)) {
+			var queueIndex = findWithAttr(activePlaylist, 'url', lastRequest, true);
+			if(lastRequest.length > 0 && (queueIndex >= currentIndex)) {
 				for(var i= 0; i < pendingRequests.length; i++){
-						SCM.queue(pendingRequests[i], queueIndex);
-						queueIndex++;
+						SCM.queue(pendingRequests[i], ++queueIndex);
 				}
 			} else {
-				queueIndex = 1;
+				queueIndex = currentIndex + 1;
 				for(var i= 0; i < pendingRequests.length; i++){
 						SCM.queue(pendingRequests[i], queueIndex);
 						queueIndex++;
 				}
 			}
+			lastRequest = pendingRequests[pendingRequests.length-1].url();
+			pendingRequests = [];
 		}
 		socket.emit('track_finished', {playlist:currentPlaylist});
 	}, false);
