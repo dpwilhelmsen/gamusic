@@ -14,46 +14,21 @@ $(document).ready(function(){
  
     // Initial set of notes, loop through and add to list
     socket.on('initial_setup', function(data){
-    	displayPlaylist(data);
+    	displayPlaylist(data.playlist);
     	$('head').append("<script type=\"text/javascript\" src=\"http:\/\/localhost:3000/script.js\" "+
-    	"data-config='{\"skin\":\"skins/tunes/skin.css\",\"volume\":50,\"autoplay\":true,"
+    	"data-config='{\"skin\":\"skins/tunes/skin.css\",\"volume\":100,\"autoplay\":true,"
     	+"\"shuffle\":false,\"repeat\":1,\"placement\":\"top\",\"showplaylist\":false,\"playlist\":"
     	+JSON.stringify(playlist)
     	+"}' ><\/script>");
     });
- 
-    // New socket connected, display new count on page
-    socket.on('users_connected', function(data){
-        $('#usersConnected').html('Users connected: ' + data);
-    })
     
     // Add requested song to playlist
     socket.on('request_added', displayPlaylist);
     
-    $('#makeRequest').click(function(){
-    	var request = {};
-    	request.title = $('#title').val();
-    	request.url = $('#url').val();
-    	if(request.title.length <= 0 || request.url.length <= 0) {
-    		alert('Title and URL must be populated');
-    		return;
-    	}
-    	socket.emit('new_request', {request: request});
-    });
 })
 </script>
 </head>
 <body>
-<ul id="playlist"></ul>
-<div id="usersConnected"></div>
 
-<div>
-Make a request:
-<label for="title">Title</labelm>
-<input type="text" id="title" name="title" value="" />
-<label for="url">URL</labelm>
-<input type="text" id="url" name="url" value="" />
-<input type="submit" id="makeRequest" value="Submit" />
-</div>
 </body>
 </html>

@@ -1,60 +1,145 @@
 <html>
-<head>
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
-<script src="/socket.io/socket.io.js"></script>
-<script>
-var playlist = [];
-$(document).ready(function(){
-    // Connect to our node/websockets server
-    var socket = io.connect('http://localhost:3000');
-    
-    function displayPlaylist(data){
-        var html = '';
-        for (var i = 0; i < data.length; i++){
-            // We store html as a var then add to DOM after for efficiency
-            html += '<li>' + data[i].title + '</li>';
-        }
-        playlist = data;
-        $('#playlist').html(html);
-    }
- 
-    // Initial set of notes, loop through and add to list
-    socket.on('initial_setup', function(data){
-    	displayPlaylist(data);
-    });
- 
-    // New socket connected, display new count on page
-    socket.on('users_connected', function(data){
-        $('#usersConnected').html('Users connected: ' + data);
-    })
-    
-    // Add requested song to playlist
-    socket.on('request_added', displayPlaylist);
-    
-    $('#makeRequest').click(function(){
-    	var request = {};
-    	request.title = $('#title').val();
-    	request.url = $('#url').val();
-    	if(request.title.length <= 0 || request.url.length <= 0) {
-    		alert('Title and URL must be populated');
-    		return;
-    	}
-    	socket.emit('new_request', {request: request});
-    });
-})
-</script>
-</head>
-<body>
-<ul id="playlist"></ul>
-<div id="usersConnected"></div>
 
-<div>
-Make a request:
-<label for="title">Title</labelm>
-<input type="text" id="title" name="title" value="" />
-<label for="url">URL</labelm>
-<input type="text" id="url" name="url" value="" />
-<input type="submit" id="makeRequest" value="Submit" />
-</div>
+<head>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/gamusic.css" />
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <script>
+        var playlist = [];
+        var youtubeInfo = {};
+        var socket = io.connect('http://localhost:3000');
+        var storeInfo = function (info) {
+    			youtubeInfo.title = info.data.title;
+    			socket.emit('new_request', {
+                    	request: youtubeInfo
+                });
+    			
+		};
+        $(document).ready(function () {
+            // Connect to our node/websockets server
+			
+			var loadInfo = function (videoId) {
+				var gdata = document.createElement("script");
+				gdata.src = "http://gdata.youtube.com/feeds/api/videos/" + videoId + "?v=2&alt=jsonc&callback=storeInfo";
+				var body = document.getElementsByTagName("body")[0];
+				body.appendChild(gdata);
+			};
+			
+			function parseVideoId(url){
+				var prefix = '(v=|/v/|youtu.be/)';
+				return url
+					.match(new RegExp(prefix+'.*'))[0]
+					.replace(new RegExp(prefix),'')
+					.substr(0,11);
+			}
+
+            function displayPlaylist(data) {
+            	if(data.hasOwnProperty('current')) {
+                	if (data.current !== 0) 
+                		$('#previous span').html(data.playlist[data.current - 1].title);
+                	$('#current span').html(data.playlist[data.current].title);
+                	$('#next span').html(data.playlist[data.current + 1].title);
+                }
+            }
+
+            // Initial set of notes, loop through and add to list
+            socket.on('initial_setup', function (data) {
+                displayPlaylist(data);
+            });
+
+            // New socket connected, display new count on page
+            socket.on('users_connected', function (data) {
+                $('#usersConnected').html('<span class="glyphicon glyphicon-user"></span>'+(data - 3));
+            })
+
+            // Add requested song to playlist
+            socket.on('request_added', displayPlaylist);
+
+            socket.on('track_finished', function (data) {
+                var previous = data.playlist[data.previous];
+                var current = data.playlist[data.previous + 1];
+                var next = data.playlist[data.previous + 2];
+                $('#previous span').html(previous.title);
+                $('#current span').html(current.title);
+                $('#next span').html(next.title);
+            });
+
+            $('#makeRequest').click(function (e) {
+            	e.preventDefault();
+                var request = {};
+                request.title = $('#title').val();
+                request.url = $('#url').val();
+                if (request.url.length <= 0) {
+                    return;
+                }
+                var youtubeMatches = request.url.match(/(youtube.com|youtu.be)/);
+                if(youtubeMatches && request.title.length == 0) {
+                		loadInfo(parseVideoId(request.url));
+                		youtubeInfo.url = request.url;
+                }else{
+                	socket.emit('new_request', {
+                    	request: request
+                	});
+                }
+                $('#title, #url').val('');
+            });
+        })
+    </script>
+</head>
+
+<body>
+    <div class="container play-status">
+
+        <!-- Three columns of text below the carousel -->
+        <div class="row">
+            <div class="col-lg-3 left">
+                <div id="previous">
+                    <h3>Previous Track: </h3><span></span>
+                </div>
+            </div>
+            <!-- /.col-lg-4 -->
+            <div class="col-lg-6 middle">
+                <div id="current">
+                    <h2>Current Track:</h2>  <span></span>
+                </div>
+            </div>
+            <!-- /.col-lg-4 -->
+            <div class="col-lg-3 right">
+                <div id="next">
+                    <h3>Next Track: </h3><div class="small">May change based on requests.</div><span></span>
+                </div>
+            </div>
+            <!-- /.col-lg-4 -->
+        </div>
+        <!-- /.row -->
+
+        <div class="row">
+            <div class="col-lg-8 request-form">
+                <form class="form-inline">
+                    <fieldset>
+
+                        <!-- Form Name -->
+                        <legend>Make a Request</legend>
+                        <p class="help-block">Accepts Youtube, Soundcloud and MP3 links.</p>
+                        <!-- Text input-->
+                        <div class="form-group">
+                            <label class="sr-only" for="title">Title (Optional)</label>
+                            <input id="title" name="title" type="text" placeholder="Title (Optional)" class="form-control input-lg">
+                            <label class="sr-only url-label" for="url">Url</label>
+                            <input id="url" name="url" type="text" placeholder="URL" class="form-control input-lg" required="">
+                            <button id="makeRequest" name="makeRequest" class="btn btn-lg btn-default">Submit</button>
+                        </div>
+
+                    </fieldset>
+                </form>
+            </div>
+            <div class="col-lg-4">
+            	<div id="usersConnected"><span class="glyphicon glyphicon-user"></span></div>
+            </div>
+        </div>
+    </div>
+    <script src="js/bootstrap.min.js"></script>
 </body>
+
 </html>

@@ -89,7 +89,12 @@ $(document).ready(function(){
 			lastRequest = pendingRequests[pendingRequests.length-1].url();
 			pendingRequests = [];
 		}
-		socket.emit('track_finished', {playlist:currentPlaylist});
+		var appendedPlaylist = SCM.playlist();
+		var finalPlaylist = _.map(SCM.playlist(), function(song){
+			return {title:song.title(), url:song.url()};
+		});
+		
+		socket.emit('track_finished', {playlist:finalPlaylist, previous: currentIndex});
 	}, false);
  	/*if(window==window.parent)
 		location.href = 'http://scmplayer.net';*/
@@ -109,10 +114,11 @@ $(document).ready(function(){
 		var data = e.data;
 		if(data.indexOf('SCM')!=0) 
 			return;
-		if(window.SCM && window.Song)
+		if(window.SCM && window.Song) {
 			(new Function("SCM,Song",data))(SCM,Song);
-		else
+		} else {
 			SCMQueue.push(data);
+		}
 	});
 	document.write('<iframe src="javascript:location.replace(\''+url+'\');" frameborder="0" id="content" allowtransparency="true" name="content"></iframe>');
 })();

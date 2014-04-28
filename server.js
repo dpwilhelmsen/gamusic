@@ -1,13 +1,13 @@
 var mysql = require('mysql')
 
 // Define our db creds
-var db = mysql.createConnection({
+var db_config = {
     host: 'localhost',
     port : 8889,
     user: 'user',
     password: 'password',
     database: 'gamusic'
-})
+};
  
 var express = require('express');
 var app = express()
@@ -23,15 +23,41 @@ app.get('/', function (req, res) {
 });
 //app.use("/", express.static(__dirname + '/'));
 
-// Log any errors connected to the db
-db.connect(function(err){
-    if (err) console.log(err);
-})
+var db;
+
+function htmlEntities(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    	.replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/\'/g, '&#39;');
+}
+
+function handleDisconnect() {
+  db = mysql.createConnection(db_config); // Recreate the connection, since
+                                                  // the old one cannot be reused.
+
+  db.connect(function(err) {              // The server is either down
+    if(err) {                                     // or restarting (takes a while sometimes).
+      console.log('error when connecting to db:', err);
+      setTimeout(handleDisconnect, 2000); // We introduce a delay before attempting to reconnect,
+    }                                     // to avoid a hot loop, and to allow our node script to
+  });                                     // process asynchronous requests in the meantime.
+                                          // If you're also serving http, display a 503 error.
+  db.on('error', function(err) {
+    console.log('db error', err);
+    if(err.code === 'PROTOCOL_CONNECTION_LOST') { // Connection to the MySQL server is usually
+      handleDisconnect();                         // lost due to either server restart, or a
+    } else {                                      // connnection idle timeout (the wait_timeout
+      throw err;                                  // server variable configures this)
+    }
+  });
+}
+
+handleDisconnect();
  
 // Define/initialize our global vars
 var currentPlaylist = [];
 var isInit = false;
 var socketCount = 0;
+var currentIndex = 0;
 
 function shuffle(o) {
 	for(var j, x, i = o.length; i; j = parseInt(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
@@ -51,16 +77,22 @@ io.sockets.on('connection', function(socket){
     })
  	
  	socket.on('new_request', function(data) {
- 		db.query('INSERT INTO songs SET ?', {title: data.request.title, url: data.request.url}, function(){
+ 		db.query('INSERT INTO songs SET ?', {title: htmlEntities(data.request.title), url: htmlEntities(data.request.url)}, function(){
  			io.sockets.emit('request_added', data);
  		});
  	});	
+ 	socket.on('track_finished', function(data) {
+ 		currentPlaylist = data.playlist;
+ 		currentIndex = data.previous+1;
+ 		io.sockets.emit('track_finished', data);
+ 	});
     // Check to see if initial query/notes are set
     if (! isInit) {
         // Initial app start, run db query
         db.query('SELECT * FROM songs')
             .on('result', function(data){
                 // Push results onto the notes array
+                data.title = htmlEntities(data.title);
                 currentPlaylist.push(data);
             })
             .on('end', function(){
@@ -72,6 +104,6 @@ io.sockets.on('connection', function(socket){
         isInit = true
     } else {
         // Initial notes already exist, send out
-        socket.emit('initial_setup', currentPlaylist);
+        socket.emit('initial_setup', {playlist:currentPlaylist, current:currentIndex});
     }
 })
