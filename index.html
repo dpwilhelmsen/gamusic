@@ -8,7 +8,7 @@
     <script>
         var playlist = [];
         var youtubeInfo = {};
-        var socket = io.connect('http://localhost:3000');
+        var socket = io.connect('http://localhost:3030');
         var storeInfo = function (info) {
     			youtubeInfo.title = info.data.title;
     			socket.emit('new_request', {
