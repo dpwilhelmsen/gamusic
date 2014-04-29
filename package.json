@@ -1,10 +1,28 @@
 {
   "name": "gamusic",
   "version": "0.0.1",
+  "description": "",
+  "main": "server.js",
   "dependencies": {
-    "express": "3.x",
-    "mysql":"*",
+    "mysql": "~2.2.0",
+    "socket.io": "~0.9.16",
+    "express": "~3.5.2"
   },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/dpwilhelmsen/gamusic.git"
+  },
+  "author": "dpwilhelmsen",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dpwilhelmsen/gamusic/issues"
+  },
+  "homepage": "https://github.com/dpwilhelmsen/gamusic",
   "engines": {
     "node": "0.10.x",
     "npm": "1.2.x"
