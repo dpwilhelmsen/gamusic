@@ -81,10 +81,10 @@ io.sockets.on('connection', function(socket){
  			io.sockets.emit('request_added', data);
  		});
  	});	
- 	socket.on('track_finished', function(data) {
+ 	socket.on('update_playlist', function(data) {
  		currentPlaylist = data.playlist;
  		currentIndex = data.previous+1;
- 		io.sockets.emit('track_finished', data);
+ 		io.sockets.emit('update_playlist', data);
  	});
     // Check to see if initial query/notes are set
     if (! isInit) {

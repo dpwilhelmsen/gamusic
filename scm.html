@@ -22,7 +22,6 @@ body{overflow:hidden; background:transparent; }
 <script>
 var currentPlaylist = [];
 var pendingRequests = [];
-var queuedRequests = false;
 var lastRequest = '';
 
 function findWithAttr(array, attr, value, isMethod) {
@@ -58,7 +57,28 @@ $(document).ready(function(){
     socket.on('request_added', function(data){
     	var request = new Song(data.request);
     	pendingRequests.push(request);
-    	queuedRequests = true;
+        var current = SCM.current();
+        var activePlaylist = SCM.playlist();
+        var currentIndex = findWithAttr(activePlaylist, 'url', current.url(), true);
+        var queueIndex = findWithAttr(activePlaylist, 'url', lastRequest, true);
+        if(lastRequest.length > 0 && (queueIndex >= currentIndex)) {
+            for(var i= 0; i < pendingRequests.length; i++){
+                SCM.queue(pendingRequests[i], ++queueIndex);
+            }
+        } else {
+            queueIndex = currentIndex + 1;
+            for(var i= 0; i < pendingRequests.length; i++){
+                SCM.queue(pendingRequests[i], queueIndex);
+                queueIndex++;
+            }
+        }
+        lastRequest = pendingRequests[pendingRequests.length-1].url();
+        pendingRequests = [];
+        var finalPlaylist = _.map(SCM.playlist(), function(song){
+            return {title:song.title(), url:song.url()};
+        });
+
+        socket.emit('update_playlist', {playlist:finalPlaylist, previous: currentIndex});
     });
     
 })
@@ -70,31 +90,11 @@ $(document).ready(function(){
 <script type="text/javascript">
 (function(){
 	document.addEventListener("trackFinished", function(data){
-		var current = SCM.current();
-		var activePlaylist = SCM.playlist();
-		var currentIndex = findWithAttr(activePlaylist, 'url', current.url(), true);
-		if(queuedRequests){
-			var queueIndex = findWithAttr(activePlaylist, 'url', lastRequest, true);
-			if(lastRequest.length > 0 && (queueIndex >= currentIndex)) {
-				for(var i= 0; i < pendingRequests.length; i++){
-						SCM.queue(pendingRequests[i], ++queueIndex);
-				}
-			} else {
-				queueIndex = currentIndex + 1;
-				for(var i= 0; i < pendingRequests.length; i++){
-						SCM.queue(pendingRequests[i], queueIndex);
-						queueIndex++;
-				}
-			}
-			lastRequest = pendingRequests[pendingRequests.length-1].url();
-			pendingRequests = [];
-		}
-		var appendedPlaylist = SCM.playlist();
 		var finalPlaylist = _.map(SCM.playlist(), function(song){
 			return {title:song.title(), url:song.url()};
 		});
 		
-		socket.emit('track_finished', {playlist:finalPlaylist, previous: currentIndex});
+		socket.emit('update_playlist', {playlist:finalPlaylist, previous: currentIndex});
 	}, false);
  	/*if(window==window.parent)
 		location.href = 'http://scmplayer.net';*/

@@ -56,7 +56,7 @@
             // Add requested song to playlist
             socket.on('request_added', displayPlaylist);
 
-            socket.on('track_finished', function (data) {
+            socket.on('update_playlist', function (data) {
                 var previous = data.playlist[data.previous];
                 var current = data.playlist[data.previous + 1];
                 var next = data.playlist[data.previous + 2];
