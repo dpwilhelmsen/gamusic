@@ -43,6 +43,17 @@
                 }
             }
 
+            function createAutoClosingAlert(selector, delay) {
+                var alert = $(selector).alert();
+                window.setTimeout(function() { alert.alert('close') }, delay);
+            }
+
+            function requestSuccessAlert() {
+                $('.alerts-container').append('<div class="alert alert-success fade in">Your request has been successfully added to the playlist.</div>');
+                createAutoClosingAlert('.alert', 2000);
+                $(document).off('requestSuccessful');
+            }
+
             // Initial set of notes, loop through and add to list
             socket.on('initial_setup', function (data) {
                 displayPlaylist(data);
@@ -54,7 +65,10 @@
             })
 
             // Add requested song to playlist
-            socket.on('request_added', displayPlaylist);
+            socket.on('request_added', function(data){
+                displayPlaylist(data);
+                $(document).trigger('requestSuccessful');
+            });
 
             socket.on('update_playlist', function (data) {
                 var previous = data.playlist[data.previous];
@@ -83,6 +97,7 @@
                 	});
                 }
                 $('#title, #url').val('');
+                $(document).on('requestSuccessful', requestSuccessAlert);
             });
         })
     </script>
@@ -121,6 +136,7 @@
 
                         <!-- Form Name -->
                         <legend>Make a Request</legend>
+                        <div class="alerts-container"></div>
                         <p class="help-block">Accepts Youtube, Soundcloud and MP3 links.</p>
                         <!-- Text input-->
                         <div class="form-group">
