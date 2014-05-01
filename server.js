@@ -27,7 +27,7 @@ var db;
 
 function htmlEntities(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    	.replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/\'/g, '&#39;')
+    	.replace(/>/g, '&gt;').replace(/"/g, '').replace(/\'/g, '')
     	.replace(/\[/g, '&#91;').replace(/\]/g, '&#93;').replace(/\{/g, '&#123;')
     	.replace(/\}/g, '&#124;').replace(/\(/g, '&#40;').replace(/\)/g, '&#41;');
 }
