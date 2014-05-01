@@ -14,7 +14,7 @@ var app = express()
   , server = require('http').createServer(app)
   , io = require('socket.io').listen(server);
 
-server.listen(3030);
+server.listen(process.env.PORT || 3030);
 
 app.use(express.static(__dirname + '/'));
 //app.engine('html', require('ejs').renderFile);
@@ -24,7 +24,6 @@ app.get('/', function (req, res) {
 //app.use("/", express.static(__dirname + '/'));
 
 var db;
-db = mysql.createConnection(db_config);
 
 function htmlEntities(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -54,7 +53,7 @@ function handleDisconnect() {
   });
 }
 
-//handleDisconnect();
+handleDisconnect();
  
 // Define/initialize our global vars
 var currentPlaylist = [];
@@ -80,11 +79,9 @@ io.sockets.on('connection', function(socket){
     })
  	
  	socket.on('new_request', function(data) {
- 		db.connect();
  		db.query('INSERT INTO songs SET ?', {title: htmlEntities(data.request.title), url: htmlEntities(data.request.url)}, function(){
  			io.sockets.emit('request_added', data);
  		});
- 		db.end();
  	});	
  	socket.on('update_playlist', function(data) {
  		currentPlaylist = data.playlist;
@@ -98,7 +95,6 @@ io.sockets.on('connection', function(socket){
  	
     // Check to see if initial query/notes are set
     if (! isInit) {
-    	db.connect();
         // Initial app start, run db query
         db.query('SELECT * FROM songs')
             .on('result', function(data){
@@ -113,7 +109,6 @@ io.sockets.on('connection', function(socket){
             })
  
         isInit = true
-        db.end();
     } else {
         // Initial notes already exist, send out
         socket.emit('initial_setup', {playlist:currentPlaylist, current:currentIndex});
