@@ -16,7 +16,7 @@ $(document).ready(function(){
     socket.on('initial_setup', function(data){
     	displayPlaylist(data.playlist);
     	$('head').append("<script type=\"text/javascript\" src=\"http:\/\/localhost:3030/script.js\" "+
-    	"data-config='{\"skin\":\"skins/tunes/skin.css\",\"volume\":100,\"autoplay\":true,"
+    	"data-config='{\"skin\":\"skins/tunes/skin.css\",\"volume\":50,\"autoplay\":true,"
     	+"\"shuffle\":false,\"repeat\":1,\"placement\":\"top\",\"showplaylist\":false,\"playlist\":"
     	+JSON.stringify(playlist)
     	+"}' ><\/script>");
