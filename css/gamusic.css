@@ -89,3 +89,17 @@ div#usersConnected {
 	margin-top: 140px;
 }
 
+.play-status a, .play-status a:hover { color:#666;}
+
+a span.ext-link.glyphicon.ext-link {
+	font-size: .5em;
+	display: inline-block;
+	margin-left: 10px;
+	vertical-align: top;
+	line-height: .2;
+}
+
+a span.ext-link.glyphicon.smaller {
+	top: -5;
+	margin-left: 4px;
+}

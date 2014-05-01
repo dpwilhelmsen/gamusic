@@ -40,9 +40,9 @@
                 	var current = data.playlist[data.current];
                 	var next = data.playlist[data.current + 1];
                 	if (data.current > 0)
-	            	   	$('#previous span').html(previous.title);
-                	$('#current span').html(current.title);
-                	$('#next span').html(next.title);
+	            	   	$('#previous span').html('<a href="'+previous.url+'" target="_blank">'+previous.title+'<span class="ext-link smaller glyphicon glyphicon-new-window"></span></a>');
+                	$('#current span').html('<a href="'+current.url+'" target="_blank">'+current.title+'<span class="ext-link glyphicon glyphicon-new-window"></span></a>');
+                	$('#next span').html('<a href="'+next.url+'" target="_blank">'+next.title+'<span class="ext-link smaller glyphicon glyphicon-new-window"></span></a>');
                 }
             }
 
