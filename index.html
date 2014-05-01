@@ -36,10 +36,13 @@
 
             function displayPlaylist(data) {
             	if(data.hasOwnProperty('current')) {
-                	if (data.current !== 0) 
-                		$('#previous span').html(data.playlist[data.current - 1].title);
-                	$('#current span').html(data.playlist[data.current].title);
-                	$('#next span').html(data.playlist[data.current + 1].title);
+                	var previous = data.playlist[data.current - 1];
+                	var current = data.playlist[data.current];
+                	var next = data.playlist[data.current + 1];
+                	if (data.current > 0)
+	            	   	$('#previous span').html(previous.title);
+                	$('#current span').html(current.title);
+                	$('#next span').html(next.title);
                 }
             }
 
@@ -71,12 +74,11 @@
             });
 
             socket.on('update_playlist', function (data) {
-                var previous = data.playlist[data.previous];
-                var current = data.playlist[data.previous + 1];
-                var next = data.playlist[data.previous + 2];
-                $('#previous span').html(previous.title);
-                $('#current span').html(current.title);
-                $('#next span').html(next.title);
+                displayPlaylist(data);
+            });
+            
+            socket.on('request_complete', function (data) {
+                displayPlaylist(data);
             });
 
             $('#makeRequest').click(function (e) {

@@ -78,7 +78,7 @@ $(document).ready(function(){
             return {title:song.title(), url:song.url()};
         });
 
-        socket.emit('update_playlist', {playlist:finalPlaylist, previous: currentIndex});
+        socket.emit('request_complete', {playlist:finalPlaylist, current: currentIndex});
     });
     
 })
@@ -90,11 +90,14 @@ $(document).ready(function(){
 <script type="text/javascript">
 (function(){
 	document.addEventListener("trackFinished", function(data){
-		var finalPlaylist = _.map(SCM.playlist(), function(song){
+		var current = SCM.current();
+        var activePlaylist = SCM.playlist();
+        var currentIndex = findWithAttr(activePlaylist, 'url', current.url(), true);
+		var finalPlaylist = _.map(activePlaylist, function(song){
 			return {title:song.title(), url:song.url()};
 		});
 		
-		socket.emit('update_playlist', {playlist:finalPlaylist, previous: currentIndex});
+		socket.emit('update_playlist', {playlist:finalPlaylist, current: currentIndex+1});
 	}, false);
  	/*if(window==window.parent)
 		location.href = 'http://scmplayer.net';*/

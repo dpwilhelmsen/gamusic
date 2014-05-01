@@ -27,7 +27,9 @@ var db;
 
 function htmlEntities(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    	.replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/\'/g, '&#39;');
+    	.replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/\'/g, '&#39;')
+    	.replace(/\[/g, '&#91;').replace(/\]/g, '&#93;').replace(/\{/g, '&#123;')
+    	.replace(/\}/g, '&#124;').replace(/\(/g, '&#40;').replace(/\)/g, '&#41;');
 }
 
 function handleDisconnect() {
@@ -83,9 +85,14 @@ io.sockets.on('connection', function(socket){
  	});	
  	socket.on('update_playlist', function(data) {
  		currentPlaylist = data.playlist;
- 		currentIndex = data.previous+1;
+ 		currentIndex = data.current;
  		io.sockets.emit('update_playlist', data);
  	});
+ 	
+ 	socket.on('request_complete', function(data) {
+ 		io.sockets.emit('request_complete', data);
+ 	});
+ 	
     // Check to see if initial query/notes are set
     if (! isInit) {
         // Initial app start, run db query
@@ -98,7 +105,7 @@ io.sockets.on('connection', function(socket){
             .on('end', function(){
             	currentPlaylist = shuffle(currentPlaylist);
                 // Only emit notes after query has been completed
-                socket.emit('initial_setup', currentPlaylist);
+                socket.emit('initial_setup', {playlist:currentPlaylist, current:currentIndex});
             })
  
         isInit = true
