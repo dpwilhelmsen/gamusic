@@ -28,9 +28,14 @@ var	playback = null,
 		var matches = _(playlist()).filter(function(el){
 			return el.url() == song.url();
 		});
-		if(matches.length>0) 
+		if(matches.length>0){
+			if(position === -1) {
+				playlist.push(matches[0]);
+			}else{
+				playlist.splice(position, 0, matches[0]);
+			}
 			return matches[0];
-		else{
+		}else{
 			if(position === -1) {
 				playlist.push(song);
 			}else{

@@ -60,6 +60,11 @@
             // Initial set of notes, loop through and add to list
             socket.on('initial_setup', function (data) {
                 displayPlaylist(data);
+                for(var i=0; i<data.requests.length; i++){
+                	$('.requests-table').append('<tr class="hidden" data-url="'+data.requests[i].url+'"><td>'
+                        +data.requests[i].title+'</td></tr>');
+                	$('tr.hidden').fadeIn().removeClass('hidden');
+                }
             });
 
             // New socket connected, display new count on page
@@ -82,7 +87,7 @@
             
             socket.on('request_complete', function (data) {
                 displayPlaylist(data);
-                $('.requests-table').append('<tr class="hidden" data-url="'+data.url+'"><td>'
+                $('.requests-table').append('<tr class="hidden" data-url="'+data.request.url+'"><td>'
                         +data.request.title+'</td></tr>');
                 $('tr.hidden').fadeIn().removeClass('hidden');
             });
