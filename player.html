@@ -11,6 +11,17 @@ $(document).ready(function(){
     function displayPlaylist(data){
         playlist = data;
     }
+    
+    var escapeSpecialChars = function(string) {
+    return string.replace(/\\n/g, "\\n")
+               .replace(/\\'/g, "\\'")
+               .replace(/\\"/g, '\\"')
+               .replace(/\\&/g, "\\&")
+               .replace(/\\r/g, "\\r")
+               .replace(/\\t/g, "\\t")
+               .replace(/\\b/g, "\\b")
+               .replace(/\\f/g, "\\f");
+	};
  
     // Initial set of notes, loop through and add to list
     socket.on('initial_setup', function(data){
@@ -18,10 +29,10 @@ $(document).ready(function(){
     	$('head').append("<script type=\"text/javascript\" src=\"http:\/\/localhost:3030/script.js\" "+
     	"data-config='{\"skin\":\"skins/tunes/skin.css\",\"volume\":50,\"autoplay\":true,"
     	+"\"shuffle\":false,\"repeat\":1,\"placement\":\"top\",\"showplaylist\":false,\"playlist\":"
-    	+JSON.stringify(playlist)
+    	+escapeSpecialChars(JSON.stringify(playlist))
     	+"}' ><\/script>");
     });
-    
+
     // Add requested song to playlist
     socket.on('request_added', displayPlaylist);
     
