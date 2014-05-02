@@ -75,10 +75,16 @@
 
             socket.on('update_playlist', function (data) {
                 displayPlaylist(data);
+                $('.requests-table').find('[data-url="'+data.currentSong.url+'"]').fadeOut(400, function(){
+                   $(this).remove();
+                });
             });
             
             socket.on('request_complete', function (data) {
                 displayPlaylist(data);
+                $('.requests-table').append('<tr class="hidden" data-url="'+data.url+'"><td>'
+                        +data.request.title+'</td></tr>');
+                $('tr.hidden').fadeIn().removeClass('hidden');
             });
 
             $('#makeRequest').click(function (e) {
@@ -153,6 +159,10 @@
                 </form>
             </div>
             <div class="col-lg-4">
+                <legend class="upcoming-title">Upcoming Requests</legend>
+                <table class="table table-striped requests-table">
+
+                </table>
             	<div id="usersConnected"><span class="glyphicon glyphicon-user"></span></div>
             </div>
         </div>
