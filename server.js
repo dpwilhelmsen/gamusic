@@ -32,6 +32,21 @@ function htmlEntities(str) {
     	.replace(/\}/g, '&#124;').replace(/\(/g, '&#40;').replace(/\)/g, '&#41;');
 }
 
+function findWithAttr(array, attr, value, isMethod) {
+    isMethod = typeof isMethod !== 'undefined' ? isMethod : false;
+    for(var i = 0; i < array.length; i++) {
+        if(isMethod){
+            if(array[i][attr]() === value) {
+                return i;
+            }
+        } else {
+            if(array[i][attr] === value) {
+                return i;
+            }
+        }
+    }
+}
+
 function handleDisconnect() {
   db = mysql.createConnection(db_config); // Recreate the connection, since
                                                   // the old one cannot be reused.
@@ -60,11 +75,29 @@ var currentPlaylist = [];
 var isInit = false;
 var socketCount = 0;
 var currentIndex = 0;
+var requests = null;
 
 function shuffle(o) {
 	for(var j, x, i = o.length; i; j = parseInt(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
 	return o;
 };
+
+function getRequests() {
+    if(requests !== null) return requests;
+    var selectResults;
+    db.query('SELECT * FROM requests')
+        .on('result', function(data){
+            selectResults = JSON.parse(data);
+        })
+        .on('end', function(){
+            requests = selectResults;
+        })
+    return selectResults.length <= 0 ? [] : selectResults;
+}
+
+function saveRequests() {
+
+}
  
 io.sockets.on('connection', function(socket){
     // Socket has connected, increase socket count
@@ -86,10 +119,18 @@ io.sockets.on('connection', function(socket){
  	socket.on('update_playlist', function(data) {
  		currentPlaylist = data.playlist;
  		currentIndex = data.current;
+        requests = getRequests();
+        var requestIndex = findWithAttr(requests, 'url', data.currentSong.url);
+        if(typeof requestIndex !== 'undefined'){
+            requests.splice(requestIndex, 1);
+            saveRequests();
+        }
  		io.sockets.emit('update_playlist', data);
  	});
  	
  	socket.on('request_complete', function(data) {
+        requests = getRequests().push(data.request);
+        saveRequests();
  		io.sockets.emit('request_complete', data);
  	});
  	
@@ -99,7 +140,7 @@ io.sockets.on('connection', function(socket){
         db.query('SELECT * FROM songs')
             .on('result', function(data){
                 // Push results onto the notes array
-                data.title = htmlEntities(data.title);
+                //data.title = htmlEntities(data.title);
                 currentPlaylist.push(data);
             })
             .on('end', function(){

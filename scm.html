@@ -78,7 +78,7 @@ $(document).ready(function(){
             return {title:song.title(), url:song.url()};
         });
 
-        socket.emit('request_complete', {playlist:finalPlaylist, current: currentIndex});
+        socket.emit('request_complete', {playlist:finalPlaylist, current: currentIndex, request: data.request});
     });
     
 })
@@ -96,8 +96,9 @@ $(document).ready(function(){
 		var finalPlaylist = _.map(activePlaylist, function(song){
 			return {title:song.title(), url:song.url()};
 		});
+        var newSong = {title:activePlaylist[currentIndex+1].title(), url:activePlaylist[currentIndex+1].url()};
 		
-		socket.emit('update_playlist', {playlist:finalPlaylist, current: currentIndex+1});
+		socket.emit('update_playlist', {playlist:finalPlaylist, current: currentIndex+1, currentSong:newSong});
 	}, false);
  	/*if(window==window.parent)
 		location.href = 'http://scmplayer.net';*/

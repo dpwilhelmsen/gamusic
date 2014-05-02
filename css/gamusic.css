@@ -86,7 +86,10 @@ input#url {
 
 div#usersConnected {
 	text-align: right;
-	margin-top: 140px;
+}
+
+.upcoming-title {
+    margin-top:35px;
 }
 
 .play-status a, .play-status a:hover { color:#666;}
