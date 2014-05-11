@@ -23,9 +23,43 @@
         <script src="/socket.io/socket.io.js"></script>
         <script type="text/javascript" src="js/lib/require/require.js"></script>
         <script>
-            var currentPlaylist = [];
-            var pendingRequests = [];
-            var lastRequest = '';
+            var currentPlaylist = [],
+                pendingRequests = [],
+                lastRequest = '',
+                config = {
+                            'skin':'skins/tunes/skin.css',
+                            'volume':50,
+                            'autoplay':true,
+                            'shuffle':false,
+                            'repeat':1,
+                            'placement':'top',
+                            'showplaylist':false,
+                            'playlist':[]
+                },
+                postMessage = function(msg){
+                    var event = new MessageEvent('message', {'data':msg});
+                    window.dispatchEvent(event);
+                },
+                postFactory = function(obj,keys){
+                    var keys = keys.split(','),
+                            post = function(key){
+                                return function(arg){
+                                    var argStr = '';
+                                    if(typeof(arg)!='undefined')
+                                        argStr = (key.match(/(play|queue)/) ? 'new Song(':'(') +
+                                                JSON.stringify(arg)+')';
+                                    postMessage('SCM.'+key+'('+argStr+')');
+                                }
+                            };
+                    for(var i=0;i<keys.length;i++){
+                        var key = keys[i];
+                        obj[key] = post(key);
+                    }
+                },
+                postConfig = function(config){
+                    postMessage('SCM.config('+JSON.stringify(config)+')');
+                },
+                SCMInit = {};
 
             function findWithAttr(array, attr, value, isMethod) {
                 isMethod = typeof isMethod !== 'undefined' ? isMethod : false;
@@ -46,133 +80,84 @@
 
             $(document).ready(function(){
 
-            document.addEventListener("trackFinished", function(data){
-                var current = SCM.current();
-                var activePlaylist = SCM.playlist();
-                var currentIndex = findWithAttr(activePlaylist, 'url', current.url(), true);
-                var finalPlaylist = _.map(activePlaylist, function(song){
-                    return {title:song.title(), url:song.url()};
-                });
-                var newSong = {title:activePlaylist[currentIndex+1].title(), url:activePlaylist[currentIndex+1].url()};
+                document.addEventListener("trackFinished", function(data){
+                    var current = SCM.current();
+                    var activePlaylist = SCM.playlist();
+                    var currentIndex = findWithAttr(activePlaylist, 'url', current.url(), true);
+                    var finalPlaylist = _.map(activePlaylist, function(song){
+                        return {title:song.title(), url:song.url()};
+                    });
+                    var newSong = {title:activePlaylist[currentIndex+1].title(), url:activePlaylist[currentIndex+1].url()};
 
-                socket.emit('update_playlist', {playlist:finalPlaylist, current: currentIndex+1, currentSong:newSong});
-            }, false);
+                    socket.emit('update_playlist', {playlist:finalPlaylist, current: currentIndex+1, currentSong:newSong});
+                }, false);
 
-            //Setup event listeners and initiate SCMQueue
-            var addEvent = function(elm, evType, fn) {
-                        if(elm.addEventListener)
-                            elm.addEventListener(evType, fn);
-                        else if (elm.attachEvent)
-                            elm.attachEvent('on' + evType, fn);
-                        else
-                            elm['on' + evType] = fn;
-                    },
-                    url = location.hash.substr(1),
-                    host = url.substr(0,url.indexOf('/',10));
+                //Setup event listeners and initiate SCMQueue
+                var addEvent = function(elm, evType, fn) {
+                            if(elm.addEventListener)
+                                elm.addEventListener(evType, fn);
+                            else if (elm.attachEvent)
+                                elm.attachEvent('on' + evType, fn);
+                            else
+                                elm['on' + evType] = fn;
+                        };
 
-            window.SCMQueue = [];
-            addEvent(window,'message',function(e){
-                var data = e.data;
-                if(data.indexOf('SCM')!=0)
-                    return;
-                if(window.SCM && window.Song) {
-                    (new Function("SCM,Song",data))(SCM,Song);
-                } else {
-                    SCMQueue.push(data);
-                }
-            });
-
-            function displayPlaylist(data){
-                currentPlaylist = data;
-            }
-
-            var escapeSpecialChars = function(string) {
-            return string.replace(/\\n/g, "\\n")
-                       .replace(/\\'/g, "\\'")
-                       .replace(/\\"/g, '\\"')
-                       .replace(/\\&/g, "\\&")
-                       .replace(/\\r/g, "\\r")
-                       .replace(/\\t/g, "\\t")
-                       .replace(/\\b/g, "\\b")
-                       .replace(/\\f/g, "\\f");
-            };
-
-            // Initial set of notes, loop through and add to list
-            socket.on('initial_setup', function(data){
-                displayPlaylist(data.playlist);
-                config.playlist =  currentPlaylist;
-                postFactory(SCMInit,
-                                'queue,play,pause,next,previous,volume,skin,placement,'+
-                                'loadPlaylist,repeatMode,isShuffle,showPlaylist,'+
-                                'togglePlaylist,toggleShuffle,changeRepeatMode');
-                if(config) postConfig(config);
-                SCMInit .init = postConfig;
-            });
-
-            // Add requested song to playlist
-            socket.on('request_added', function(data){
-                var request = new Song(data.request);
-                pendingRequests.push(request);
-                var current = SCM.current();
-                var activePlaylist = SCM.playlist();
-                var currentIndex = findWithAttr(activePlaylist, 'url', current.url(), true);
-                var queueIndex = findWithAttr(activePlaylist, 'url', lastRequest, true);
-                if(lastRequest.length > 0 && (queueIndex >= currentIndex)) {
-                    for(var i= 0; i < pendingRequests.length; i++){
-                        SCM.queue(pendingRequests[i], ++queueIndex);
+                window.SCMQueue = [];
+                addEvent(window,'message',function(e){
+                    var data = e.data;
+                    if(data.indexOf('SCM')!=0)
+                        return;
+                    if(window.SCM && window.Song) {
+                        (new Function("SCM,Song",data))(SCM,Song);
+                    } else {
+                        SCMQueue.push(data);
                     }
-                } else {
-                    queueIndex = currentIndex + 1;
-                    for(var i= 0; i < pendingRequests.length; i++){
-                        SCM.queue(pendingRequests[i], queueIndex);
-                        queueIndex++;
-                    }
-                }
-                lastRequest = pendingRequests[pendingRequests.length-1].url();
-                pendingRequests = [];
-                var finalPlaylist = _.map(SCM.playlist(), function(song){
-                    return {title:song.title(), url:song.url()};
                 });
 
-                socket.emit('request_complete', {playlist:finalPlaylist, current: currentIndex, request: data.request});
-            });
+                function displayPlaylist(data){
+                    currentPlaylist = data;
+                }
 
-            var config = {
-                'skin':'skins/tunes/skin.css',
-                'volume':50,
-                'autoplay':true,
-                'shuffle':false,
-                'repeat':1,
-                'placement':'top',
-                'showplaylist':false,
-                'playlist':[]
-            },
-            postMessage = function(msg){
-                var event = new MessageEvent('message', {'data':msg});
-                window.dispatchEvent(event);
-            },
-                    postFactory = function(obj,keys){
-                        var keys = keys.split(','),
-                                post = function(key){
-                                    return function(arg){
-                                        var argStr = '';
-                                        if(typeof(arg)!='undefined')
-                                            argStr = (key.match(/(play|queue)/) ? 'new Song(':'(') +
-                                                    JSON.stringify(arg)+')';
-                                        postMessage('SCM.'+key+'('+argStr+')');
-                                    }
-                                };
-                        for(var i=0;i<keys.length;i++){
-                            var key = keys[i];
-                            obj[key] = post(key);
+                // Initial set of notes, loop through and add to list
+                socket.on('initial_setup', function(data){
+                    displayPlaylist(data.playlist);
+                    config.playlist =  currentPlaylist;
+                    postFactory(SCMInit,
+                                    'queue,play,pause,next,previous,volume,skin,placement,'+
+                                    'loadPlaylist,repeatMode,isShuffle,showPlaylist,'+
+                                    'togglePlaylist,toggleShuffle,changeRepeatMode');
+                    if(config) postConfig(config);
+                    SCMInit .init = postConfig;
+                });
+
+                // Add requested song to playlist
+                socket.on('request_added', function(data){
+                    var request = new Song(data.request);
+                    pendingRequests.push(request);
+                    var current = SCM.current();
+                    var activePlaylist = SCM.playlist();
+                    var currentIndex = findWithAttr(activePlaylist, 'url', current.url(), true);
+                    var queueIndex = findWithAttr(activePlaylist, 'url', lastRequest, true);
+                    if(lastRequest.length > 0 && (queueIndex >= currentIndex)) {
+                        for(var i= 0; i < pendingRequests.length; i++){
+                            SCM.queue(pendingRequests[i], ++queueIndex);
                         }
-                    },
-                    postConfig = function(config){
-                        postMessage('SCM.config('+JSON.stringify(config)+')');
-                    };
-            var SCMInit = {};
+                    } else {
+                        queueIndex = currentIndex + 1;
+                        for(var i= 0; i < pendingRequests.length; i++){
+                            SCM.queue(pendingRequests[i], queueIndex);
+                            queueIndex++;
+                        }
+                    }
+                    lastRequest = pendingRequests[pendingRequests.length-1].url();
+                    pendingRequests = [];
+                    var finalPlaylist = _.map(SCM.playlist(), function(song){
+                        return {title:song.title(), url:song.url()};
+                    });
 
-        })
+                    socket.emit('request_complete', {playlist:finalPlaylist, current: currentIndex, request: data.request});
+                });
+            });
         </script>
         <script type="text/javascript" >
             require([
@@ -180,7 +165,6 @@
                 'text!view/player.html',
                 'text!view/playlist.html',
                 'scm','song','scm.ui',
-
                 'binding/slider',
                 'binding/scm'
             ],function(ko,$,_,playerView,playlistView,SCM,Song){
