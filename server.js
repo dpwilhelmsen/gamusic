@@ -143,44 +143,43 @@ io.sockets.on('connection', function(socket){
  	
  	socket.on('new_request', function(data) {
  		db.query('INSERT INTO songs SET ?', {title: htmlEntities(data.request.title), url: htmlEntities(data.request.url)}, function(){
+            requests.push(data.request);
+            data.requests = requests;
  			io.sockets.emit('request_added', data);
  		});
  	});	
  	socket.on('update_playlist', function(data) {
  		currentPlaylist = data.playlist;
  		currentIndex = data.current;
-        var requestIndex = findWithAttr(requests, 'url', data.currentSong.url);
-        if(typeof requestIndex !== 'undefined'){
-            requests.splice(requestIndex, 1);
-            //saveRequests();
-        }
+        requests = data.requests;
+
  		io.sockets.emit('update_playlist', data);
  	});
  	
  	socket.on('request_complete', function(data) {
-        requests.push(data.request);
+        data.requests = requests;
         //saveRequests();
  		io.sockets.emit('request_complete', data);
  	});
  	
-    // Check to see if initial query/notes are set
+    // Check to see if initial query/playlist is set
     if (! isInit) {
         // Initial app start, run db query
         db.query('SELECT * FROM songs')
             .on('result', function(data){
-                // Push results onto the notes array
+                // Push results onto the playlist array
                 data.title = htmlEntities(data.title);
                 currentPlaylist.push(data);
             })
             .on('end', function(){
             	currentPlaylist = shuffle(currentPlaylist);
-                // Only emit notes after query has been completed
+                // Only emit playlist after query has been completed
                 socket.emit('initial_setup', {playlist:currentPlaylist, current:currentIndex});
             })
  
         isInit = true
     } else {
-        // Initial notes already exist, send out
+        // Initial playlist already exist, send out
         socket.emit('initial_setup', {playlist:currentPlaylist, current:currentIndex, requests:requests});
     }
 })

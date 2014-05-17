@@ -52,6 +52,7 @@
             }
 
             function requestSuccessAlert() {
+                $('#makeRequest').prop('disabled', false);
                 $('.alerts-container').append('<div class="alert alert-success fade in">Your request has been successfully added to the playlist.</div>');
                 createAutoClosingAlert('.alert', 2000);
                 $(document).off('requestSuccessful');
@@ -69,7 +70,7 @@
 
             // New socket connected, display new count on page
             socket.on('users_connected', function (data) {
-                $('#usersConnected').html('<span class="glyphicon glyphicon-user"></span>'+(data - 3));
+                $('#usersConnected').html('<span class="glyphicon glyphicon-user"></span>'+(data - 1));
             })
 
             // Add requested song to playlist
@@ -80,20 +81,29 @@
 
             socket.on('update_playlist', function (data) {
                 displayPlaylist(data);
-                $('.requests-table').find('[data-url="'+data.currentSong.url+'"]').fadeOut(400, function(){
-                   $(this).remove();
+                $('.requests-table').find('[data-url="'+data.playlist[data.current].url+'"]').each(function(){
+                    $(this).fadeOut(400, function(){
+                        $(this).remove();
+                    });
                 });
             });
             
             socket.on('request_complete', function (data) {
-                displayPlaylist(data);
-                $('.requests-table').append('<tr class="hidden" data-url="'+data.request.url+'"><td>'
-                        +data.request.title+'</td></tr>');
+                $('#next span').html('<a href="'+data.next.url+'" target="_blank">'+data.next.title
+                        + '<span class="ext-link smaller glyphicon glyphicon-new-window"></span></a>');
+                $('.requests-table tr').remove();
+                for(var i = 0; i < data.requests.length; i++) {
+                    var cssClass = (data.request.url === data.requests[i].url) ? 'class="hidden"' : '';
+                    $('.requests-table').append('<tr '+cssClass+' data-url="'+data.requests[i].url+'"><td>'
+                            +data.requests[i].title+'</td></tr>');
+                }
+
                 $('tr.hidden').fadeIn().removeClass('hidden');
             });
 
             $('#makeRequest').click(function (e) {
             	e.preventDefault();
+                $(this).prop('disabled', true);
                 var request = {};
                 request.title = $('#title').val();
                 request.url = $('#url').val();
