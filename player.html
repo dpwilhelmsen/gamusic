@@ -25,9 +25,7 @@
         <script src="js/playlist-manager.js"></script>
         <script>
         //variables
-            var currentPlaylist = [],
-                pendingRequests = [],
-                lastRequest = '',
+            var pendingRequests = [],
                 hasRequests = false,
                 storedPlaylist = [],
                 config = {
@@ -64,21 +62,6 @@
                     postMessage('SCM.config('+JSON.stringify(config)+')');
                 },
                 SCMInit = {};
-
-            function findWithAttr(array, attr, value, isMethod) {
-                isMethod = typeof isMethod !== 'undefined' ? isMethod : false;
-                for(var i = 0; i < array.length; i++) {
-                    if(isMethod){
-                        if(array[i][attr]() === value) {
-                            return i;
-                        }
-                    } else {
-                        if(array[i][attr] === value) {
-                            return i;
-                        }
-                    }
-                }
-            }
             // Connect to our node/websockets server
             var socket = io.connect('http://localhost:3030');
 
@@ -86,34 +69,13 @@
 
                 document.addEventListener("trackFinished", function(data){
                     var current = SCM.current();
-                    var activePlaylist = SCM.playlist();
-                    var currentIndex = findWithAttr(activePlaylist, 'url', current.url(), true);
-
-                    if(hasRequests) {
-                        //If the current song is the top of the stored playlist
-                        if(activePlaylist[currentIndex].url()=== storedPlaylist[0].url())
-                            storedPlaylist.shift();
-                        if(activePlaylist[currentIndex].url()=== pendingRequests[0].url)
-                            pendingRequests.shift();
-                        if(pendingRequests.length === 1) {
-                            activePlaylist = pendingRequests.concact(storedPlaylist);
-                            hasRequests = false;
-                        }else if (pendingRequests.length === 0){
-                            activePlaylist = storedPlaylist;
-                            hasRequests = false;
-                        } else {
-                            activePlaylist = pendingRequests;
-                        }
-                        SCM.loadPlaylist(activePlaylist);
-                        activePlaylist.unshift(current);
-                        currentIndex = 0;
+                    playlistManager.updatePlaylist(current);
+                    if(playlistManager.unsetRequest) {
+                        SCM.loadPlaylist(playlistManager.getPlaylist());
+                        playlistManager.unsetRequest = false;
                     }
 
-                    var finalPlaylist = _.map(activePlaylist, function(song){
-                        return {title:song.title(), url:song.url()};
-                    });
-
-                    socket.emit('update_playlist', {playlist:finalPlaylist, current: currentIndex+1, requests: pendingRequests});
+                    socket.emit('update_playlist', {playlist:playlistManager.getPlaylist(), current: 0, requests: playlistManager.getRequests()});
                 }, false);
 
                 //Setup event listeners and initiate SCMQueue
@@ -138,21 +100,12 @@
                     }
                 });
 
-                function displayPlaylist(data){
-                    currentPlaylist = data;
-                }
-
                 // Initial set of notes, loop through and add to list
                 socket.on('initial_setup', function(data){
-                    var playlist = data.playlist;
-                    if(data.requests.length > 0 ){
-                        storedPlaylist = data.playlist;
-                        playlist = data.requests;
-                        hasRequests = true;
-                    }
+                    playlistManager.setPlaylist(data.playlist);
 
-                    displayPlaylist(playlist);
-                    config.playlist =  currentPlaylist;
+                    //TODO: Set initial requests
+                    config.playlist =  playlistManager.getPlaylist();
                     postFactory(SCMInit,
                                     'queue,play,pause,next,previous,volume,skin,placement,'+
                                     'loadPlaylist,repeatMode,isShuffle,showPlaylist,'+
@@ -165,13 +118,10 @@
                 socket.on('request_added', function(data){
                     pendingRequests = data.requests;
                     var next = pendingRequests[0];
-                    if(!hasRequests) {
-                        var current = SCM.current();
-                        var activePlaylist = SCM.playlist();
-                        var currentIndex = findWithAttr(activePlaylist, 'url', current.url(), true);
-                        storedPlaylist = activePlaylist.slice(currentIndex);
+                    for(var i =0; i < pendingRequests.length; i++){
+                        playlistManager.pendingRequests.push(data.requests[i]);
                     }
-                    hasRequests = true;
+                    playlistManager.unsetRequest = true;
 
                     socket.emit('request_complete', {next: next, request: data.request, requests: pendingRequests});
                 });
