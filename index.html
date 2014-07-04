@@ -18,6 +18,22 @@
                 });
     			
 		};
+
+        function empty(data)
+        {
+            if(typeof(data) == 'number' || typeof(data) == 'boolean')
+                return false;
+            if(typeof(data) == 'undefined' || data === null)
+                return true;
+            if(typeof(data.length) != 'undefined')
+                return data.length == 0;
+            var count = 0;
+            for(var i in data)
+                if(data.hasOwnProperty(i))
+                    count ++;
+            return count == 0;
+        };
+
         function populateRequestsTable(playlistManager, request) {
             request = typeof request !== 'undefined' ? request : {url:""};
             var allRequests = playlistManager.requests.concat(playlistManager.pendingRequests);
@@ -62,18 +78,10 @@
             function displayPlaylist(data) {
                 if(data.hasOwnProperty('manager')) {
                     var manager = data.manager;
-                    $('#previous span').html('<a href="'+manager.previous.url+'" target="_blank">'+manager.previous.title+'<span class="ext-link smaller glyphicon glyphicon-new-window"></span></a>');
+                    if(!empty(data.manager.previous))
+                        $('#previous span').html('<a href="'+manager.previous.url+'" target="_blank">'+manager.previous.title+'<span class="ext-link smaller glyphicon glyphicon-new-window"></span></a>');
                     $('#current span').html('<a href="'+manager.current.url+'" target="_blank">'+manager.current.title+'<span class="ext-link glyphicon glyphicon-new-window"></span></a>');
                     $('#next span').html('<a href="'+manager.next.url+'" target="_blank">'+manager.next.title+'<span class="ext-link smaller glyphicon glyphicon-new-window"></span></a>');
-                }
-            	else if(data.hasOwnProperty('current')) {
-                	var previous = data.playlist[data.current - 1];
-                	var current = data.playlist[data.current];
-                	var next = data.playlist[data.current + 1];
-                	if (data.current > 0)
-	            	   	$('#previous span').html('<a href="'+previous.url+'" target="_blank">'+previous.title+'<span class="ext-link smaller glyphicon glyphicon-new-window"></span></a>');
-                	$('#current span').html('<a href="'+current.url+'" target="_blank">'+current.title+'<span class="ext-link glyphicon glyphicon-new-window"></span></a>');
-                	$('#next span').html('<a href="'+next.url+'" target="_blank">'+next.title+'<span class="ext-link smaller glyphicon glyphicon-new-window"></span></a>');
                 }
             }
 
@@ -115,11 +123,7 @@
 
             socket.on('update_playlist', function (data) {
                 displayPlaylist(data);
-                $('.requests-table').find('[data-url="'+data.playlist[data.current].url+'"]').each(function(){
-                    $(this).fadeOut(400, function(){
-                        $(this).remove();
-                    });
-                });
+                populateRequestsTable(data.manager);
                 $('#vote').off('click', voteToSkip);
                 $('#vote').on('click', voteToSkip).text('Vote to Skip Track');
             });

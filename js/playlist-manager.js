@@ -58,11 +58,14 @@ var playlistManager = {
 
     removeSong: function(song) {
         var removeIndex = this.findWithAttr(this.requests, 'url', song.url);
-        if(removeIndex !== false) this.requests.splice(removeIndex, 1);
+        if(removeIndex !== false)
+            this.requests = this.requests.slice(removeIndex+1);
         removeIndex = this.findWithAttr(this.pendingRequests, 'url', song.url);
-        if(removeIndex !== false) this.pendingRequests.splice(removeIndex, 1);
+        if(removeIndex !== false)
+            this.pendingRequests = this.pendingRequests.slice(removeIndex+1);
         removeIndex = this.findWithAttr(this.defaultPlaylist, 'url', song.url);
-        if(removeIndex !== false) this.defaultPlaylist.splice(removeIndex, 1);
+        if(removeIndex !== false)
+            this.defaultPlaylist = this.defaultPlaylist.slice(removeIndex+1);
     },
 
     findWithAttr: function(array, attr, value, isMethod) {
