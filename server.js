@@ -23,8 +23,6 @@ app.get('/', function (req, res) {
 });
 //app.use("/", express.static(__dirname + '/'));
 
-var db;
-
 function htmlEntities(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;')
     	.replace(/>/g, '&gt;').replace(/"/g, '').replace(/\'/g, '')
@@ -69,6 +67,7 @@ function handleDisconnect() {
 }
 
 handleDisconnect();
+prepareDb();
  
 // Define/initialize our global vars
 var isInit = false;
@@ -80,6 +79,34 @@ var skipVotes = 0;
 function shuffle(o) {
 	for(var j, x, i = o.length; i; j = parseInt(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
 	return o;
+};
+
+function prepareDb(){
+    db.query('SELECT 1 FROM songs LIMIT 1;').on('error', function(msg){
+        if(msg.code == 'ER_NO_SUCH_TABLE'){
+            db.query("CREATE TABLE `songs` (\
+                        `id` bigint(20) NOT NULL AUTO_INCREMENT,\
+                        `title` text NOT NULL,\
+                        `url` varchar(2083) NOT NULL,\
+                        `active` int(11) DEFAULT '1',\
+                        `notes` varchar(255) DEFAULT NULL,\
+                        PRIMARY KEY (`id`))", function(err, result){
+
+                // Case there is an error during the creation
+                if(err) {
+                    console.log(err);
+                    return false;
+                }
+                else{
+                    db.query("INSERT INTO songs SET ?", {title: "Für Elise (Piano version)", url:"https://www.youtube.com/watch?v=_mVW8tgGY_w"});
+                    return true;
+                }
+            });
+        }
+        console.log(msg);
+        return false;
+    });
+    return true;
 };
  
 io.sockets.on('connection', function(socket){
@@ -148,24 +175,24 @@ io.sockets.on('connection', function(socket){
     });
  	
     // Check to see if initial query/playlist is set
-    if (! isInit) {
+    if (! isInit){
         var currentPlaylist = [];
         // Initial app start, run db query
         db.query('SELECT * FROM songs WHERE active = 1')
-            .on('result', function(data){
+            .on('result', function (data) {
                 // Push results onto the playlist array
                 data.title = htmlEntities(data.title);
                 currentPlaylist.push(data);
             })
-            .on('end', function(){
-            	currentPlaylist = shuffle(currentPlaylist);
+            .on('end', function () {
+                currentPlaylist = shuffle(currentPlaylist);
                 playlistManager.setPlaylist(currentPlaylist);
                 // Only emit playlist after query has been completed
                 playlistManager.current = playlistManager.defaultPlaylist[0];
                 playlistManager.next = playlistManager.defaultPlaylist[1];
                 socket.emit('initial_setup', {manager: playlistManager});
             })
- 
+
         isInit = true
     } else {
         // Initial playlist already exist, send out
