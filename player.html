@@ -69,13 +69,17 @@
 
                 document.addEventListener("trackFinished", function(data){
                     var current = SCM.current();
-                    playlistManager.updatePlaylist(current);
-                    if(playlistManager.unsetRequest) {
-                        SCM.loadPlaylist(playlistManager.getPlaylist());
-                        playlistManager.unsetRequest = false;
+                    if(playlistManager.updatePlaylist(current)) {
+                        var newPlaylist = playlistManager.getPlaylist();
+                        newPlaylist.unshift(playlistManager.previous);
+                        SCM.loadPlaylist(newPlaylist);
                     }
 
                     socket.emit('update_playlist', {playlist:playlistManager.getPlaylist(), current: 0, requests: playlistManager.getRequests()});
+                }, false);
+
+                document.addEventListener("errorThrown", function(data){
+                    SCM.next();
                 }, false);
 
                 //Setup event listeners and initiate SCMQueue
@@ -116,14 +120,13 @@
 
                 // Add requested song to playlist
                 socket.on('request_added', function(data){
-                    pendingRequests = data.requests;
-                    var next = pendingRequests[0];
-                    for(var i =0; i < pendingRequests.length; i++){
-                        playlistManager.pendingRequests.push(data.requests[i]);
-                    }
-                    playlistManager.unsetRequest = true;
+                    playlistManager.pendingRequests.push(data.request);
+                    var thePlaylist = playlistManager.getPlaylist();
+                    var nextArray = playlistManager.requests.concat(playlistManager.pendingRequests);
+                    var removeIndex = playlistManager.findWithAttr(nextArray, 'url', thePlaylist[0].url);
+                    if(removeIndex !== false) nextArray.splice(removeIndex, 1);
 
-                    socket.emit('request_complete', {next: next, request: data.request, requests: pendingRequests});
+                    socket.emit('request_complete', {next: thePlaylist[1], request: data.request, requests: nextArray });
                 });
             });
         </script>

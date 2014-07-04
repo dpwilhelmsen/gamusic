@@ -76,6 +76,18 @@ define([
 			case 100: msg += ': Request not Found'; break;
 		}
 		if(e.data!=5) SCM.message(msg);
+        var event = new CustomEvent(
+            "errorThrown",
+            {
+                detail: {
+                    message: msg,
+                    time: new Date()
+                },
+                bubbles: true,
+                cancelable: true
+            }
+        );
+        document.dispatchEvent(event);
 	}
 	function parseVideoId(url){
 		var prefix = '(v=|/v/|youtu.be/)';

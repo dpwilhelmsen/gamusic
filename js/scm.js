@@ -213,7 +213,7 @@ var	playback = null,
 		//non repeat at beginning
 		else if(repeatMode()==0 && i<0) current(list[0]);
 		//wrap around
-		else current(list[(i + len) % len]); 
+		else current(list[(i + len) % len]);
 	},
 
 	next = _(change).bind(null,1),

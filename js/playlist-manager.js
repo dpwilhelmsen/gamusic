@@ -8,7 +8,6 @@ var playlistManager = {
     previous:'',
     current:'',
     next:'',
-    unsetRequest:false,
 
     hasRequests: function(){
         return this.requests.length > 0;
@@ -20,7 +19,10 @@ var playlistManager = {
         // TODO If track is in defaultPlaylist, remove it.
         var playlistIndex = this.findWithAttr(this.defaultPlaylist, 'url', request.url);
         if(playlistIndex) this.defaultPlaylist.splice(playlistIndex, 1);
-        this.unsetRequest = true;
+    },
+
+    unsetRequest: function(){
+      return this.pendingRequests.length > 0;
     },
 
     getRequests: function() {
@@ -32,25 +34,35 @@ var playlistManager = {
     },
 
     getPlaylist: function() {
-        return this.requests.concat(this.defaultPlaylist);
+        return this.requests.concat(this.pendingRequests.concat(this.defaultPlaylist));
     },
 
     updatePlaylist: function(currentSong) {
         this.previous = {title:currentSong.title(), url:currentSong.url()};
-        if(this.hasRequests())
-            this.requests.shift();
-        else
-            this.defaultPlaylist.shift();
-        if(this.unsetRequest){
-            for(var i = 0; i < this.pendingRequests.length; i++) {
-                this.setRequest(this.pendingRequests[i]);
-                this.pendingRequests.splice(i,1);
+        this.removeSong(this.previous);
+        var unsetRequests = false;
+
+        if(this.unsetRequest()){
+            for(var i = 0; i <= this.pendingRequests.length; i++) {
+                this.setRequest(this.pendingRequests[0]);
+                this.pendingRequests.splice(0,1);
             }
-            this.unsetRequest = false;
+            this.pendingRequests = [];
+            unsetRequests = true;
         }
         var playlist = this.getPlaylist();
         this.current = playlist[0];
         this.next = playlist[1];
+        return unsetRequests;
+    },
+
+    removeSong: function(song) {
+        var removeIndex = this.findWithAttr(this.requests, 'url', song.url);
+        if(removeIndex !== false) this.requests.splice(removeIndex, 1);
+        removeIndex = this.findWithAttr(this.pendingRequests, 'url', song.url);
+        if(removeIndex !== false) this.pendingRequests.splice(removeIndex, 1);
+        removeIndex = this.findWithAttr(this.defaultPlaylist, 'url', song.url);
+        if(removeIndex !== false) this.defaultPlaylist.splice(removeIndex, 1);
     },
 
     findWithAttr: function(array, attr, value, isMethod) {

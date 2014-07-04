@@ -143,8 +143,6 @@ io.sockets.on('connection', function(socket){
  	
  	socket.on('new_request', function(data) {
  		db.query('INSERT INTO songs SET ?', {title: htmlEntities(data.request.title), url: htmlEntities(data.request.url)}, function(){
-            requests.push(data.request);
-            data.requests = requests;
  			io.sockets.emit('request_added', data);
  		});
  	});	
@@ -157,8 +155,6 @@ io.sockets.on('connection', function(socket){
  	});
  	
  	socket.on('request_complete', function(data) {
-        data.requests = requests;
-        //saveRequests();
  		io.sockets.emit('request_complete', data);
  	});
  	
