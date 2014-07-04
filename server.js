@@ -142,9 +142,25 @@ io.sockets.on('connection', function(socket){
     })
  	
  	socket.on('new_request', function(data) {
- 		db.query('INSERT INTO songs SET ?', {title: htmlEntities(data.request.title), url: htmlEntities(data.request.url)}, function(){
- 			io.sockets.emit('request_added', data);
- 		});
+        if(data.addToList === true) {
+            var queryResults = [];
+            var query = db.query('SELECT * FROM songs WHERE url ="' + htmlEntities(data.request.url)+'"');
+            query.on('result', function(row) {
+                queryResults.push(row);
+            });
+
+            query.on('end', function(){
+                if (queryResults.length  == 0) {
+                    db.query('INSERT INTO songs SET ?', {title: htmlEntities(data.request.title), url: htmlEntities(data.request.url)}, function () {
+                        io.sockets.emit('request_added', data);
+                    });
+                } else {
+                    io.sockets.emit('request_added', data);
+                }
+            });
+        } else {
+            io.sockets.emit('request_added', data);
+        }
  	});	
  	socket.on('update_playlist', function(data) {
  		playlistManager.importManager(data.manager);
@@ -176,7 +192,7 @@ io.sockets.on('connection', function(socket){
     if (! isInit) {
         var currentPlaylist = [];
         // Initial app start, run db query
-        db.query('SELECT * FROM songs')
+        db.query('SELECT * FROM songs WHERE active = 1')
             .on('result', function(data){
                 // Push results onto the playlist array
                 data.title = htmlEntities(data.title);

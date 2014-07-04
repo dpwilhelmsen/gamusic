@@ -11,8 +11,10 @@
         var socket = io.connect('http://localhost:3030');
         var storeInfo = function (info) {
     			youtubeInfo.title = info.data.title;
+                var addToMaster = $('input[name=addToMaster]').is(':checked') ? true : false;
     			socket.emit('new_request', {
-                    	request: youtubeInfo
+                    	request: youtubeInfo,
+                        addToList: addToMaster
                 });
     			
 		};
@@ -144,13 +146,15 @@
                 if (request.url.length <= 0) {
                     return;
                 }
+                var addToMaster = $('input[name=addToMaster]').is(':checked') ? true : false;
                 var youtubeMatches = request.url.match(/(youtube.com|youtu.be)/);
                 if(youtubeMatches && request.title.length == 0) {
                 		loadInfo(parseVideoId(request.url));
                 		youtubeInfo.url = request.url;
                 }else{
                 	socket.emit('new_request', {
-                    	request: request
+                    	request: request,
+                        addToList: addToMaster
                 	});
                 }
                 $('#title, #url').val('');
@@ -212,6 +216,7 @@
                             <label class="sr-only url-label" for="url">Url</label>
                             <input id="url" name="url" type="text" placeholder="URL" class="form-control input-lg" required="">
                             <button id="makeRequest" name="makeRequest" class="btn btn-lg btn-default">Submit</button>
+                            <div style="margin-top:5px"><label for="addToMaster" style="font-weight:normal;"><input type="checkbox" name="addToMaster" value="1" /> Add request to default playlist.</label> </div>
                         </div>
 
                     </fieldset>
