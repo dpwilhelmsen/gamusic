@@ -81,53 +81,6 @@ function shuffle(o) {
 	for(var j, x, i = o.length; i; j = parseInt(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
 	return o;
 };
-
-function getRequests() {
-	return (requests !== null) ? requests : [];
-
-    if(requests !== null) return requests;
-    var selectResults;
-    db.query('SELECT * FROM requests')
-        .on('result', function(data){
-            selectResults = JSON.parse(data);
-        })
-        .on('end', function(){
-            requests = selectResults;
-        })
-    return selectResults.length <= 0 ? [] : selectResults;
-}
-
-function saveRequests() {
-	var requestsString = '';
-	for(var i=0; i<requests.length; i++){
-		requestsString += requests[i].title + '||' + requests[i].url + '**';
-	}
-	db.query('UPDATE `properties` SET `value=? WHERE `key` = ?',[mysql_real_escape_string(requestsString), 'requests']);
-}
-function mysql_real_escape_string (str) {
-    return str.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, function (char) {
-        switch (char) {
-            case "\0":
-                return "\\0";
-            case "\x08":
-                return "\\b";
-            case "\x09":
-                return "\\t";
-            case "\x1a":
-                return "\\z";
-            case "\n":
-                return "\\n";
-            case "\r":
-                return "\\r";
-            case "\"":
-            case "'":
-            case "\\":
-            case "%":
-                return "\\"+char; // prepends a backslash to backslash, percent,
-                                  // and double/single quotes
-        }
-    });
-}
  
 io.sockets.on('connection', function(socket){
     // Socket has connected, increase socket count
@@ -177,9 +130,15 @@ io.sockets.on('connection', function(socket){
 
     socket.on('vote_placed', function(data){
        skipVotes++;
-       if (skipVotes === 3)
-        io.sockets.emit('skip_track');
+       if (skipVotes === 3) {
+           io.sockets.emit('skip_track')
+           db.query('UPDATE songs SET active=0, notes="Track Skipped by Listeners" WHERE url=?', [playlistManager.current.url])
+       }
        io.sockets.emit('vote_count', {votes: skipVotes, reset: false});
+    });
+
+    socket.on('remove_track', function(data){
+        db.query('UPDATE songs SET active=0, notes=? WHERE url=?', [data.notes, data.url]);
     });
 
     socket.on('track_skipped', function(data){
@@ -202,6 +161,8 @@ io.sockets.on('connection', function(socket){
             	currentPlaylist = shuffle(currentPlaylist);
                 playlistManager.setPlaylist(currentPlaylist);
                 // Only emit playlist after query has been completed
+                playlistManager.current = playlistManager.defaultPlaylist[0];
+                playlistManager.next = playlistManager.defaultPlaylist[1];
                 socket.emit('initial_setup', {manager: playlistManager});
             })
  

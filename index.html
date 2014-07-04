@@ -36,6 +36,7 @@
         }
 
         function voteToSkip() {
+            $('#vote').text('You have voted to skip this track');
             socket.emit('vote_placed');
         };
 
@@ -120,7 +121,7 @@
                     });
                 });
                 $('#vote').off('click', voteToSkip);
-                $('#vote').on('click', voteToSkip);
+                $('#vote').on('click', voteToSkip).text('Vote to Skip Track');
             });
             
             socket.on('request_complete', function (data) {
@@ -133,7 +134,7 @@
             socket.on('vote_count', function(data){
                 $('#vote').off('click', voteToSkip);
                 if(data.reset)
-                    $('#vote').on('click', voteToSkip);
+                    $('#vote').on('click', voteToSkip).text('Vote to Skip Track');
                 $('.skip-counter li').removeClass('active').slice(0, data.votes).addClass('active');
             });
 

@@ -79,6 +79,7 @@
                 }, false);
 
                 document.addEventListener("errorThrown", function(data){
+                    socket.emit('remove_track',{url:playlistManager.current.url, notes:data.detail.message});
                     SCM.next();
                 }, false);
 
