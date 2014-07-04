@@ -71,11 +71,11 @@ function handleDisconnect() {
 handleDisconnect();
  
 // Define/initialize our global vars
-var currentPlaylist = [];
 var isInit = false;
 var socketCount = 0;
-var currentIndex = 0;
 var requests = [];
+var playlistManager = require('./js/playlist-manager.js').playlistManager;
+var skipVotes = 0;
 
 function shuffle(o) {
 	for(var j, x, i = o.length; i; j = parseInt(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
@@ -147,19 +147,34 @@ io.sockets.on('connection', function(socket){
  		});
  	});	
  	socket.on('update_playlist', function(data) {
- 		currentPlaylist = data.playlist;
- 		currentIndex = data.current;
-        requests = data.requests;
-
+ 		playlistManager.importManager(data.manager);
+        skipVotes = 0;
  		io.sockets.emit('update_playlist', data);
  	});
  	
  	socket.on('request_complete', function(data) {
  		io.sockets.emit('request_complete', data);
  	});
+    socket.on('setup_complete', function(data) {
+        io.sockets.emit('setup_complete', data);
+    });
+
+    socket.on('vote_placed', function(data){
+       skipVotes++;
+       if (skipVotes === 3)
+        io.sockets.emit('skip_track');
+       io.sockets.emit('vote_count', {votes: skipVotes, reset: false});
+    });
+
+    socket.on('track_skipped', function(data){
+       skipVotes = 0;
+       io.sockets.emit('vote_count', {votes: skipVotes, reset: true});
+
+    });
  	
     // Check to see if initial query/playlist is set
     if (! isInit) {
+        var currentPlaylist = [];
         // Initial app start, run db query
         db.query('SELECT * FROM songs')
             .on('result', function(data){
@@ -169,13 +184,14 @@ io.sockets.on('connection', function(socket){
             })
             .on('end', function(){
             	currentPlaylist = shuffle(currentPlaylist);
+                playlistManager.setPlaylist(currentPlaylist);
                 // Only emit playlist after query has been completed
-                socket.emit('initial_setup', {playlist:currentPlaylist, current:currentIndex});
+                socket.emit('initial_setup', {manager: playlistManager});
             })
  
         isInit = true
     } else {
         // Initial playlist already exist, send out
-        socket.emit('initial_setup', {playlist:currentPlaylist, current:currentIndex, requests:requests});
+        socket.emit('initial_setup', {manager: playlistManager, votes: skipVotes});
     }
 })

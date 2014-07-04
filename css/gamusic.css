@@ -106,3 +106,57 @@ a span.ext-link.glyphicon.smaller {
 	top: -5;
 	margin-left: 4px;
 }
+
+#skip-track {
+    position: absolute;
+    bottom: 10px;
+    font-size: 18px;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+}
+
+#vote {
+    font-size:18px;
+    padding:0;
+    cursor:pointer;
+}
+
+.skip-counter ul {
+    padding: 0;
+    margin-bottom: 0;
+}
+
+.skip-counter ul li {
+    -webkit-border-radius: 100px;
+    -moz-border-radius: 100px;
+    border-radius: 100px;
+    width: 10px;
+    height: 10px;
+    line-height:22px;
+    padding: 3px;
+    background: #eeeeee; /* Old browsers */
+    background: -moz-radial-gradient(center, ellipse cover,  #eeeeee 0%, #cccccc 100%); /* FF3.6+ */
+    background: -webkit-gradient(radial, center center, 0px, center center, 100%, color-stop(0%,#eeeeee), color-stop(100%,#cccccc)); /* Chrome,Safari4+ */
+    background: -webkit-radial-gradient(center, ellipse cover,  #eeeeee 0%,#cccccc 100%); /* Chrome10+,Safari5.1+ */
+    background: -o-radial-gradient(center, ellipse cover,  #eeeeee 0%,#cccccc 100%); /* Opera 12+ */
+    background: -ms-radial-gradient(center, ellipse cover,  #eeeeee 0%,#cccccc 100%); /* IE10+ */
+    background: radial-gradient(ellipse at center,  #eeeeee 0%,#cccccc 100%); /* W3C */
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#eeeeee', endColorstr='#cccccc',GradientType=1 ); /* IE6-9 fallback on horizontal gradient */
+    border: 1px solid #aaa;
+    display:inline-block;
+}
+
+.skip-counter ul li.active {
+    background: #b5bdc8; /* Old browsers */
+    background: -moz-radial-gradient(center, ellipse cover,  #b5bdc8 0%, #28343b 100%); /* FF3.6+ */
+    background: -webkit-gradient(radial, center center, 0px, center center, 100%, color-stop(0%,#b5bdc8), color-stop(100%,#28343b)); /* Chrome,Safari4+ */
+    background: -webkit-radial-gradient(center, ellipse cover,  #b5bdc8 0%,#28343b 100%); /* Chrome10+,Safari5.1+ */
+    background: -o-radial-gradient(center, ellipse cover,  #b5bdc8 0%,#28343b 100%); /* Opera 12+ */
+    background: -ms-radial-gradient(center, ellipse cover,  #b5bdc8 0%,#28343b 100%); /* IE10+ */
+    background: radial-gradient(ellipse at center,  #b5bdc8 0%,#28343b 100%); /* W3C */
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#b5bdc8', endColorstr='#28343b',GradientType=1 ); /* IE6-9 fallback on horizontal gradient */
+
+}
+
+

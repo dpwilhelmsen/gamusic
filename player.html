@@ -75,7 +75,7 @@
                         SCM.loadPlaylist(newPlaylist);
                     }
 
-                    socket.emit('update_playlist', {playlist:playlistManager.getPlaylist(), current: 0, requests: playlistManager.getRequests()});
+                    socket.emit('update_playlist', {playlist:playlistManager.getPlaylist(), current: 0, requests: playlistManager.getRequests(), manager: playlistManager});
                 }, false);
 
                 document.addEventListener("errorThrown", function(data){
@@ -106,7 +106,7 @@
 
                 // Initial set of notes, loop through and add to list
                 socket.on('initial_setup', function(data){
-                    playlistManager.setPlaylist(data.playlist);
+                    playlistManager.importManager(data.manager);
 
                     //TODO: Set initial requests
                     config.playlist =  playlistManager.getPlaylist();
@@ -116,17 +116,25 @@
                                     'togglePlaylist,toggleShuffle,changeRepeatMode');
                     if(config) postConfig(config);
                     SCMInit .init = postConfig;
+                    socket.emit('setup_complete', {manager: playlistManager});
                 });
 
                 // Add requested song to playlist
                 socket.on('request_added', function(data){
                     playlistManager.pendingRequests.push(data.request);
+                    if(playlistManager.requests.length == 0)
+                        playlistManager.next = playlistManager.pendingRequests[0];
                     var thePlaylist = playlistManager.getPlaylist();
                     var nextArray = playlistManager.requests.concat(playlistManager.pendingRequests);
                     var removeIndex = playlistManager.findWithAttr(nextArray, 'url', thePlaylist[0].url);
                     if(removeIndex !== false) nextArray.splice(removeIndex, 1);
 
-                    socket.emit('request_complete', {next: thePlaylist[1], request: data.request, requests: nextArray });
+                    socket.emit('request_complete', {next: thePlaylist[1], request: data.request, requests: nextArray, manager:playlistManager });
+                });
+
+                socket.on('skip_track', function(){
+                    SCM.next();
+                    socket.emit('track_skipped');
                 });
             });
         </script>

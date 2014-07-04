@@ -16,6 +16,27 @@
                 });
     			
 		};
+        function populateRequestsTable(playlistManager, request) {
+            request = typeof request !== 'undefined' ? request : {url:""};
+            var allRequests = playlistManager.requests.concat(playlistManager.pendingRequests);
+            for (var i = 0; i < allRequests.length; i++)
+                if (allRequests[i].url === playlistManager.current.url) {
+                    allRequests.splice(i, 1);
+                    break;
+                }
+            for (var i = 0; i < allRequests.length; i++) {
+                var cssClass = (request.url === allRequests[i].url) ? 'class="hidden"' : '';
+                $('.requests-table').append('<tr ' + cssClass + ' data-url="' + allRequests[i].url + '"><td>'
+                        + allRequests[i].title + '</td></tr>');
+            }
+
+            $('tr.hidden').fadeIn().removeClass('hidden');
+        }
+
+        function voteToSkip() {
+            socket.emit('vote_placed');
+        };
+
         $(document).ready(function () {
             // Connect to our node/websockets server
 			
@@ -33,9 +54,16 @@
 					.replace(new RegExp(prefix),'')
 					.substr(0,11);
 			}
+            $('#vote').on('click', voteToSkip);
 
             function displayPlaylist(data) {
-            	if(data.hasOwnProperty('current')) {
+                if(data.hasOwnProperty('manager')) {
+                    var manager = data.manager;
+                    $('#previous span').html('<a href="'+manager.previous.url+'" target="_blank">'+manager.previous.title+'<span class="ext-link smaller glyphicon glyphicon-new-window"></span></a>');
+                    $('#current span').html('<a href="'+manager.current.url+'" target="_blank">'+manager.current.title+'<span class="ext-link glyphicon glyphicon-new-window"></span></a>');
+                    $('#next span').html('<a href="'+manager.next.url+'" target="_blank">'+manager.next.title+'<span class="ext-link smaller glyphicon glyphicon-new-window"></span></a>');
+                }
+            	else if(data.hasOwnProperty('current')) {
                 	var previous = data.playlist[data.current - 1];
                 	var current = data.playlist[data.current];
                 	var next = data.playlist[data.current + 1];
@@ -61,11 +89,14 @@
             // Initial set of notes, loop through and add to list
             socket.on('initial_setup', function (data) {
                 displayPlaylist(data);
-                for(var i=0; i<data.requests.length; i++){
-                	$('.requests-table').append('<tr class="hidden" data-url="'+data.requests[i].url+'"><td>'
-                        +data.requests[i].title+'</td></tr>');
-                	$('tr.hidden').fadeIn().removeClass('hidden');
-                }
+                populateRequestsTable(data.manager);
+                if(typeof data.votes !== 'undefined')
+                    $('.skip-counter li').removeClass('active').slice(0, data.votes).addClass('active');
+            });
+
+            socket.on('setup_complete', function(data){
+                displayPlaylist(data);
+                populateRequestsTable(data.manager);
             });
 
             // New socket connected, display new count on page
@@ -86,19 +117,22 @@
                         $(this).remove();
                     });
                 });
+                $('#vote').off('click', voteToSkip);
+                $('#vote').on('click', voteToSkip);
             });
             
             socket.on('request_complete', function (data) {
-                $('#next span').html('<a href="'+data.next.url+'" target="_blank">'+data.next.title
+                $('#next span').html('<a href="'+data.manager.next.url+'" target="_blank">'+data.manager.next.title
                         + '<span class="ext-link smaller glyphicon glyphicon-new-window"></span></a>');
                 $('.requests-table tr').remove();
-                for(var i = 0; i < data.requests.length; i++) {
-                    var cssClass = (data.request.url === data.requests[i].url) ? 'class="hidden"' : '';
-                    $('.requests-table').append('<tr '+cssClass+' data-url="'+data.requests[i].url+'"><td>'
-                            +data.requests[i].title+'</td></tr>');
-                }
+                populateRequestsTable(data.manager, data.request);
+            });
 
-                $('tr.hidden').fadeIn().removeClass('hidden');
+            socket.on('vote_count', function(data){
+                $('#vote').off('click', voteToSkip);
+                if(data.reset)
+                    $('#vote').on('click', voteToSkip);
+                $('.skip-counter li').removeClass('active').slice(0, data.votes).addClass('active');
             });
 
             $('#makeRequest').click(function (e) {
@@ -140,6 +174,16 @@
             <div class="col-lg-6 middle">
                 <div id="current">
                     <h2>Current Track:</h2>  <span></span>
+                </div>
+                <div id="skip-track">
+                    <div class="skip-counter">
+                        <ul>
+                            <li></li>
+                            <li></li>
+                            <li></li>
+                        </ul>
+                    </div>
+                    <span id="vote">Vote to Skip Track</span>
                 </div>
             </div>
             <!-- /.col-lg-4 -->

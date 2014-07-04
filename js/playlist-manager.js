@@ -79,6 +79,17 @@ var playlistManager = {
             }
         }
         return false;
+    },
+
+    importManager: function(manager) {
+        this.defaultPlaylist = manager.defaultPlaylist;
+        this.requests = manager.requests;
+        this.pendingRequests = manager.pendingRequests;
+        this.previous = manager.previous;
+        this.current = manager.current;
+        this.next = manager.next;
     }
 
 }
+if(typeof module !== 'undefined')
+    module.exports.playlistManager = playlistManager;
